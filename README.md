@@ -98,6 +98,8 @@ Using this method also allows `mesh.update(camera: THREE.Camera)` to be called w
 
 ## Examples:
 
+See the [github pages site](https://casulornstein.github.io/three-msdf-text-webgpu/) for a sandbox demo.
+
 To run the example demo locally, run:
 ```bash
 npm i
