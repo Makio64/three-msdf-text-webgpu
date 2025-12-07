@@ -28,7 +28,7 @@ export interface TextStyles {
   fontStyle: string;
   lineHeightPx: number;
   letterSpacingPx: number;
-  textAlign: CanvasTextAlign; // Currently unused in rendering
+  textAlign: CanvasTextAlign;
   whiteSpace: 'normal' | 'nowrap' | 'pre'; // TODO: fix pre
   // Material related
   color: THREE.ColorRepresentation

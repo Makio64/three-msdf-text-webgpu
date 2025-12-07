@@ -149,6 +149,9 @@ export function layoutText(options: LayoutOptions) {
     const lineStart = line.start;
     const lineEnd = line.end;
 
+    // Collect glyphs for this line first (to calculate line width before applying alignment)
+    const lineGlyphs: LayoutGlyph[] = [];
+
     // Add glyphs per line
     let lastGlyph: BMFontChar | null = null;
     for (let i = lineStart; i < lineEnd; i++) {
@@ -173,7 +176,7 @@ export function layoutText(options: LayoutOptions) {
           y: glyphBottom + yOffset,
       }
 
-      layoutGlyphs.push({
+      lineGlyphs.push({
           index: glyphIndex++,
           char: glyph.char || String.fromCharCode(charCode),
           code: charCode,
@@ -190,6 +193,22 @@ export function layoutText(options: LayoutOptions) {
       lineWidth = Math.max(lineWidth, glyphRight);
       penX += glyph.xadvance * fontSizeScale + metrics.fontCssStyles.letterSpacingPx;
       lastGlyph = glyph;
+    }
+
+    // Calculate alignment offset based on textAlign
+    const textAlign = metrics.fontCssStyles.textAlign;
+    let alignmentOffset = 0;
+    if (textAlign === 'center') {
+      alignmentOffset = (metrics.widthPx - lineWidth) / 2;
+    } else if (textAlign === 'right' || textAlign === 'end') {
+      alignmentOffset = metrics.widthPx - lineWidth;
+    }
+    // 'left', 'start', or default: offset = 0
+
+    // Apply alignment offset and add to final array
+    for (const glyph of lineGlyphs) {
+      glyph.bottomLeftPosition.x += alignmentOffset;
+      layoutGlyphs.push(glyph);
     }
   });
 
