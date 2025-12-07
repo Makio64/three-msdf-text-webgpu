@@ -150,12 +150,12 @@ function getMeasurementFromCanvas(style: TextStyles, text: string): CanvasRender
 
 export function collectDomTextMetrics(element: HTMLElement): DomTextMetrics {
   const textStyles = captureCssStyles(element);
-  const canvasRenderMeasurements = getMeasurementFromCanvas(textStyles, element.textContent);
+  const canvasRenderMeasurements = getMeasurementFromCanvas(textStyles, element.textContent ?? '');
   
   const { width } = element.getBoundingClientRect()
 
   return {
-    text: element.textContent,
+    text: element.textContent ?? '',
     fontCssStyles: textStyles,
     canvasRenderMeasurements,
     widthPx: width,
