@@ -29,6 +29,7 @@ export interface TextStyles {
   lineHeightPx: number;
   letterSpacingPx: number;
   textAlign: CanvasTextAlign;
+  verticalAlign: 'top' | 'center' | 'bottom';
   whiteSpace: 'normal' | 'nowrap' | 'pre'; // TODO: fix pre
   // Material related
   color: THREE.ColorRepresentation
@@ -47,6 +48,7 @@ const DEFAULT_FONT_STYLES: TextStyles = {
   lineHeightPx: 16,
   letterSpacingPx: 0,
   textAlign: 'left',
+  verticalAlign: 'top',
   whiteSpace: 'normal',
   color: '#ff0000',
   opacity: 1,
@@ -95,6 +97,7 @@ function captureCssStyles(element: HTMLElement): TextStyles {
       lineHeightPx: computeLineHeight(style, parsePx(style.fontSize) || 16),
       letterSpacingPx: parseLetterSpacing(style),
       textAlign: (style.textAlign as CanvasTextAlign) || 'left',
+      verticalAlign: 'top',
       whiteSpace: (style.whiteSpace as TextStyles['whiteSpace']) || 'normal',
       color: style.color,
       opacity: parseFloat(style.opacity) || 1,

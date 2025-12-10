@@ -212,10 +212,24 @@ export function layoutText(options: LayoutOptions) {
     }
   });
 
+  const layoutHeight = fontLineHeight * lines.length;
+  const layoutWidth = metrics.widthPx;
+
+  // Calculate alignment offsets based on text/vertical align
+  const { textAlign, verticalAlign } = metrics.fontCssStyles;
+  const verticalOffset = verticalAlign === 'center' ? layoutHeight / 2 : verticalAlign === 'bottom' ? layoutHeight : 0;
+  const horizontalOffset = textAlign === 'center' ? -layoutWidth / 2 : (textAlign === 'right' || textAlign === 'end') ? -layoutWidth : 0;
+
+  // Apply alignment offsets to all glyphs
+  for (const glyph of layoutGlyphs) {
+    glyph.bottomLeftPosition.x += horizontalOffset;
+    glyph.bottomLeftPosition.y += verticalOffset;
+  }
+
   return {
       glyphs: layoutGlyphs,
       lines,
-      width: metrics.widthPx,
-      height: fontLineHeight * lines.length,
+      width: layoutWidth,
+      height: layoutHeight,
   };
 }
