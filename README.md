@@ -66,6 +66,7 @@ With `textStyles`:
 - `lineHeightPx` (number): Default - 16
 - `letterSpacingPx` (number): Default - 0
 - `textAlign` ("center" | "end" | "left" | "right" | "start"): Default - "left"
+- `verticalAlign` ("top" | "center" | "bottom"): Default - "center"
 - `whiteSpace` ("normal" | "nowrap" | "pre" | "pre-wrap" | "pre-line" | "break-spaces"): Default - "normal"
 - `color` (string): Default - "#000000"
 - `opacity` (number): Default - 1
@@ -95,6 +96,109 @@ const textMesh = new SyncMSDFText(
 ```
 
 Using this method also allows `mesh.update(camera: THREE.Camera)` to be called which will update the transform of the mesh to align with the DOM element in the camera's view at a given depth (5 units by default).
+
+## Text Alignment
+
+Control text positioning with `textAlign` and `verticalAlign`:
+
+```js
+const textMesh = new MSDFText({
+  text: "Centered Text",
+  textStyles: {
+    widthPx: 500,
+    textAlign: 'center',      // 'left' | 'center' | 'right' | 'start' | 'end'
+    verticalAlign: 'center'   // 'top' | 'center' | 'bottom'
+  }
+}, { atlas, data: font.data })
+```
+
+When both are set to `'center'`, the text block is positioned at the mesh's origin (0, 0), making it easy to position in your scene.
+
+## Per-Letter Color & Opacity
+
+Customize individual letter colors and opacity using either static values or animated GPU-based effects.
+
+### Static Per-Glyph Colors
+
+Set colors for all glyphs at once:
+
+```js
+// Rainbow effect - each letter a different hue
+const text = "Rainbow";
+const colors = [];
+for (let i = 0; i < text.length; i++) {
+  const hue = i / text.length;
+  colors.push({
+    color: new THREE.Color().setHSL(hue, 1.0, 0.5),
+    opacity: 1.0
+  });
+}
+textMesh.setGlyphColors(colors);
+
+// Gradient effect - interpolate between two colors
+const start = new THREE.Color('#0066ff');
+const end = new THREE.Color('#ff0066');
+const gradientColors = [];
+for (let i = 0; i < text.length; i++) {
+  const t = i / (text.length - 1);
+  gradientColors.push({
+    color: new THREE.Color().lerpColors(start, end, t),
+    opacity: 1.0
+  });
+}
+textMesh.setGlyphColors(gradientColors);
+```
+
+Set a single glyph's color:
+
+```js
+// Make the first letter red with full opacity
+textMesh.setGlyphColor(0, '#ff0000', 1.0);
+
+// Make the third letter semi-transparent blue
+textMesh.setGlyphColor(2, '#0000ff', 0.5);
+```
+
+Clear all per-glyph colors to revert to the material's base color:
+
+```js
+textMesh.clearGlyphColors();
+```
+
+### Animated Effects (TSL Nodes)
+
+For GPU-accelerated animations, use Three.js Shading Language (TSL) nodes. The `glyphIndices` attribute provides the index of each letter for creating per-letter effects:
+
+```js
+import { attribute, float, mod, add, sin, sub, time, vec3, mx_hsvtorgb } from 'three/tsl';
+
+// Animated rainbow - hue shifts over time per letter
+const index = float(attribute('glyphIndices'));
+const hue = mod(add(time.mul(0.5), index.mul(0.1)), 1.0);
+const colorNode = mx_hsvtorgb(vec3(hue, 1.0, 1.0));
+textMesh.material.letterColorNode = colorNode;
+
+// Animated fade wave - opacity pulses through the text
+const opacityNode = add(sin(sub(time.mul(3), index.mul(0.5))), 1.0).mul(0.5);
+textMesh.material.letterOpacityNode = opacityNode;
+```
+
+Clear animated effects:
+
+```js
+textMesh.material.clearLetterEffects();
+```
+
+## Material Options
+
+The `MSDFTextNodeMaterial` exposes additional properties:
+
+```js
+textMesh.material.color = '#ff0000';  // Base text color
+textMesh.material.opacity = 0.8;      // Base opacity (0-1)
+textMesh.material.isSmooth = true;    // Enable smooth rendering (auto-enabled for fontSize < 20)
+textMesh.material.threshold = 0.2;    // Smoothing threshold (0-1)
+```
 
 ## Examples:
 

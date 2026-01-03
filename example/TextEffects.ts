@@ -44,3 +44,19 @@ export const rainbowWave = () => {
   const newPosition = vec3(center.x.add(radius.mul(cos(time))), positionGeometry.y, positionGeometry.z)
   return { positionNode: newPosition }
  }
+
+// TSL-based per-letter animated effects (use with material.letterColorNode / letterOpacityNode)
+export const animatedRainbowLetters = () => {
+  const index = float(attribute('glyphIndices'))
+  // Animated hue that shifts over time with offset per letter
+  const hue = mod(add(time.mul(0.5), index.mul(0.1)), 1.0)
+  const colorNode = mx_hsvtorgb(vec3(hue, 1.0, 1.0))
+  return { colorNode }
+}
+
+export const animatedFadeLetters = () => {
+  const index = float(attribute('glyphIndices'))
+  // Wave of opacity moving through the text
+  const opacity = add(sin(sub(time.mul(3), index.mul(0.5))), 1.0).mul(0.5) // Range 0.0 to 1.0
+  return { opacityNode: opacity }
+}

@@ -1,8 +1,13 @@
 import type { BMFontJSON } from "@/types/bmfont-json";
 import type { LayoutGlyph } from "./layout";
 
-export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: BMFontJSON, flipY: boolean }) {
-  const { glyphs, font } = options;
+export function buildGeometryAttributes(options: {
+  glyphs: LayoutGlyph[],
+  font: BMFontJSON,
+  flipY: boolean,
+  glyphColors?: Float32Array | null
+}) {
+  const { glyphs, font, glyphColors: inputColors } = options;
   const glyphCount = glyphs.length;
 
   const texWidth = font.common.scaleW;
@@ -109,12 +114,37 @@ export function buildGeometryAttributes(options: { glyphs: LayoutGlyph[], font: 
     indices[indicesIndex + 5] = verticesIndex + 2;
   });
 
+  // Build glyph colors array (4 vertices per glyph, 4 components RGBA per vertex)
+  // Always create the array to ensure the attribute exists for the shader
+  const glyphColors = new Float32Array(glyphCount * 4 * 4); // 4 verts * 4 components (RGBA)
+
+  for (let i = 0; i < glyphCount; i++) {
+    const colorIndex = i * 16; // 4 vertices * 4 components
+    const srcIndex = i * 4;    // Input is per-glyph RGBA
+
+    // Get color for this glyph (default to white with full opacity if not provided)
+    const r = inputColors?.[srcIndex] ?? 1.0;
+    const g = inputColors?.[srcIndex + 1] ?? 1.0;
+    const b = inputColors?.[srcIndex + 2] ?? 1.0;
+    const a = inputColors?.[srcIndex + 3] ?? 1.0;
+
+    // Repeat for all 4 vertices of the quad
+    for (let v = 0; v < 4; v++) {
+      const offset = colorIndex + v * 4;
+      glyphColors[offset] = r;
+      glyphColors[offset + 1] = g;
+      glyphColors[offset + 2] = b;
+      glyphColors[offset + 3] = a;
+    }
+  }
+
   return {
     positions,
     uvs,
     centers,
     indices,
     glyphIndices,
+    glyphColors,
     glyphCount
   };
 }

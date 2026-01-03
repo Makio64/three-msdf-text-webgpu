@@ -9,8 +9,8 @@ import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import type { BMFontJSON } from "@/types/bmfont-json";
 import { MSDFText, MSDFTextOptions, SyncMSDFText } from "@/MSDFText";
 import { FolderApi } from "tweakpane";
-import { materialColor, materialOpacity, positionGeometry } from "three/tsl";
-import { boilingLines, rainbowWave, spinText } from "./TextEffects";
+import { positionGeometry } from "three/tsl";
+import { boilingLines, rainbowWave, spinText, animatedRainbowLetters, animatedFadeLetters } from "./TextEffects";
 
 type TextEffectType = 'none' | 'rainbow' | 'boiling' | 'spin'
 
@@ -68,6 +68,9 @@ export class Experience {
 
   private standaloneMeshFolder?: FolderApi
   private domSyncMeshFolder?: FolderApi
+  private perGlyphColorsFolder?: FolderApi
+  public animatedWaveEnabled: boolean = false
+  public animatedFadeEnabled: boolean = false
 
   public msdfTextOptions: MSDFTextOptions = {
     text: "MSDF Text",
@@ -77,8 +80,8 @@ export class Experience {
       lineHeightPx: 50,
       letterSpacingPx: 0,
       whiteSpace: 'normal',
-      textAlign: 'left',
-      verticalAlign: 'top'
+      textAlign: 'center',
+      verticalAlign: 'center'
     }
   }
 
@@ -170,7 +173,73 @@ export class Experience {
       
       this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'isSmooth', { label: 'Is Smooth? (small text)'})
       this.standaloneMeshFolder?.addBinding(this.msdfTextMesh.material!, 'threshold', { label: 'Smoothing Threshold', min: 0, max: 1 })
-    
+
+      // Per-Glyph Colors Demo
+      this.perGlyphColorsFolder = Debug.pane?.addFolder({ title: 'Per-Glyph Colors Demo' })
+
+      this.perGlyphColorsFolder?.addButton({ title: 'Rainbow Text' }).on('click', () => {
+        // Static colors replace animated rainbow, but keep fade
+        this.animatedWaveEnabled = false
+        this.perGlyphColorsFolder?.refresh()
+
+        const text = this.msdfTextOptions.text
+        const colors: { color: THREE.Color; opacity: number }[] = []
+        for (let i = 0; i < text.length; i++) {
+          const hue = i / text.length
+          colors.push({ color: new THREE.Color().setHSL(hue, 1.0, 0.5), opacity: 1.0 })
+        }
+        this.msdfTextMesh.setGlyphColors(colors)
+      })
+
+      this.perGlyphColorsFolder?.addButton({ title: 'Gradient (Blue to Red)' }).on('click', () => {
+        // Static colors replace animated rainbow, but keep fade
+        this.animatedWaveEnabled = false
+        this.perGlyphColorsFolder?.refresh()
+
+        const text = this.msdfTextOptions.text
+        const colors: { color: THREE.Color; opacity: number }[] = []
+        const start = new THREE.Color('#0066ff')
+        const end = new THREE.Color('#ff0066')
+        for (let i = 0; i < text.length; i++) {
+          const t = text.length > 1 ? i / (text.length - 1) : 0
+          colors.push({ color: new THREE.Color().lerpColors(start, end, t), opacity: 1.0 })
+        }
+        this.msdfTextMesh.setGlyphColors(colors)
+      })
+
+      this.perGlyphColorsFolder?.addBinding(this, 'animatedWaveEnabled', { label: 'Animated Rainbow (TSL)' }).on('change', () => {
+        if (this.animatedWaveEnabled) {
+          // Clear static glyph colors when enabling animated rainbow
+          this.msdfTextMesh.clearGlyphColors()
+          // Use TSL-based animated color (set base to white so rainbow shows through)
+          this.msdfTextMesh.material.color = '#ffffff'
+          const { colorNode } = animatedRainbowLetters()
+          this.msdfTextMesh.material.letterColorNode = colorNode
+        } else {
+          // Only clear color node, keep opacity if fade is enabled
+          this.msdfTextMesh.material.letterColorNode = null
+        }
+      })
+
+      this.perGlyphColorsFolder?.addBinding(this, 'animatedFadeEnabled', { label: 'Animated Fade (TSL)' }).on('change', () => {
+        if (this.animatedFadeEnabled) {
+          // Use TSL-based animated opacity (can combine with color effects)
+          const { opacityNode } = animatedFadeLetters()
+          this.msdfTextMesh.material.letterOpacityNode = opacityNode
+        } else {
+          // Only clear opacity node, keep color if rainbow is enabled
+          this.msdfTextMesh.material.letterOpacityNode = null
+        }
+      })
+
+      this.perGlyphColorsFolder?.addButton({ title: 'Clear Effects' }).on('click', () => {
+        this.animatedWaveEnabled = false
+        this.animatedFadeEnabled = false
+        this.msdfTextMesh.material.clearLetterEffects()
+        this.msdfTextMesh.clearGlyphColors()
+        this.perGlyphColorsFolder?.refresh()
+      })
+
       this.domSyncMeshFolder = Debug.pane?.addFolder({ title: 'DOM-Synced Text Options', hidden: !this.showSyncMsdfText })
       this.domSyncMeshFolder?.addBinding(this, 'showDomElement', { label: 'Show DOM Element' }).on('change', (val) => {
         if (val.value) { this.domElement.classList.add('show')
@@ -214,6 +283,7 @@ export class Experience {
   private update(_deltaMs: number) {
     if (!this.initialised) return;
 
+    // TSL-based animations run automatically on the GPU via the time node
     this.debug.update();
     this.camera.update(_deltaMs);
     this.renderer.update();

@@ -47,10 +47,10 @@ const DEFAULT_FONT_STYLES: TextStyles = {
   fontStyle: 'normal',
   lineHeightPx: 16,
   letterSpacingPx: 0,
-  textAlign: 'left',
-  verticalAlign: 'top',
+  textAlign: 'center',
+  verticalAlign: 'center',
   whiteSpace: 'normal',
-  color: '#ff0000',
+  color: '#ffffff',
   opacity: 1,
   // strokeColor: '#000000',
   // strokeWidth: 0,
@@ -99,7 +99,7 @@ function captureCssStyles(element: HTMLElement): TextStyles {
       textAlign: (style.textAlign as CanvasTextAlign) || 'left',
       verticalAlign: 'top',
       whiteSpace: (style.whiteSpace as TextStyles['whiteSpace']) || 'normal',
-      color: style.color,
+      color: stripAlphaFromColor(style.color),
       opacity: parseFloat(style.opacity) || 1,
       // strokeColor: style.webkitTextStrokeColor,
       // strokeWidth: parseFloat(style.webkitTextStrokeWidth) || 0,
@@ -122,6 +122,15 @@ function parseLetterSpacing(style: CSSStyleDeclaration): number {
       return 0;
   }
   return parsePx(raw) || 0;
+}
+
+// Convert rgba() to rgb() to avoid THREE.Color alpha warnings
+function stripAlphaFromColor(color: string): string {
+  const rgbaMatch = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
+  if (rgbaMatch) {
+    return `rgb(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]})`;
+  }
+  return color;
 }
 
 function getMeasurementFromCanvas(style: TextStyles, text: string): CanvasRenderMeasurements {
